@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html dir="ltr" lang="en">
+<head>
+	<title>Projeto S.H.I.E.L.D</title>
+	<script src="https://www.gstatic.com/firebasejs/3.3.0/firebase.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<script src="https://vuejs.org/js/vue.js"></script>
+	<style>
+		#login {
+			background-color: #CCC;
+			padding: 10px 0;
+		}
+		
+		body {
+			font-family: Helvetica Neue, Arial, sans-serif;
+			font-size: 14px;
+			color: #444;
+		}
+		
+		#table {
+			display: block;  
+			margin-right: auto;  
+			margin-left: auto;  
+		}
+
+		table {
+			border: 2px solid #42b983;
+			border-radius: 3px;
+			background-color: #fff;
+		}
+
+		th {
+			background-color: #42b983;
+			color: rgba(255,255,255,0.66);
+			cursor: pointer;
+			-webkit-user-select: none;
+			-moz-user-select: none;
+			-user-select: none;
+		}
+
+		td {
+			background-color: #f9f9f9;
+		}
+
+		th, td {
+			min-width: 120px;
+			padding: 10px 20px;
+		}
+
+		th.active {
+			color: #fff;
+		}
+
+		th.active .arrow {
+			opacity: 1;
+		}
+
+		.arrow {
+			display: inline-block;
+			vertical-align: middle;
+			width: 0;
+			height: 0;
+			margin-left: 5px;
+			opacity: 0.66;
+		}
+
+		.arrow.asc {
+			border-left: 4px solid transparent;
+			border-right: 4px solid transparent;
+			border-bottom: 4px solid #fff;
+		}
+
+		.arrow.dsc {
+			border-left: 4px solid transparent;
+			border-right: 4px solid transparent;
+			border-top: 4px solid #fff;
+		}
+
+		#search {
+			margin-bottom: 10px;
+			margin-top: 10px;
+			horizontal-align: middle; 
+			margin-left: auto;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container" id="login">
+		<form class="form-inline col-md-offset-2">
+			<div class="form-group">
+				<label for="email">Email:</label>
+				<input type="email" class="form-control" id="email" color="lighten(@gray-base, 33.5%)">
+			</div>
+			<div class="form-group">
+				<label for="pwd">Senha:</label>
+				<input type="password" class="form-control" id="pwd">
+			</div>
+			<div class="checkbox">
+				<label><input type="checkbox"> Remember me</label>
+			</div>
+			<button type="button" class="btn btn-default" onclick="login()">Logar</button>
+			<button type="button" class="btn btn-default" onclick="signIn()">Cadastrar</button>
+		</form>
+	</div>
+	<div class="container">
+		<h1 class ="text-center">Projeto S.H.I.E.L.D</h2>
+		<form id="InputForm">
+			<div class="form-group">
+				<label>Nome do Site:</label>
+				<input type="text" class="form-control" id="name" placeholder="Insira o nome do site">
+			</div>
+			<div class="form-group">
+				<label>Nome da Pagina:</label>
+				<input type="text" class="form-control" id="pageName" placeholder="Insira o nome da pagina">
+			</div>
+			<div class="form-group">
+				<label>URL da Pagina:</label>
+				<input type="text" class="form-control" id="pageURL" placeholder="Insira a URL da pagina">
+			</div>
+			<div class="form-group">
+				<label>Selector 0:</label>
+				<input type="text" class="form-control" id="pageSel0" placeholder="Insira o seletor">
+			</div>
+		</form>
+		<button type="button" class="btn btn-default" id ="insertSel" onclick="insertSelector()">Inserir Seletor</button>
+		<button type="button" class="btn btn-default" id ="Submit" onclick="submitData()">Finalizar</button>
+	</div>
+	
+	<div class="container" id="tabela">
+		<script type="text/x-template" id="grid-template">
+			<table>
+				<thead>
+					<tr>
+						<th v-for="key in columns"
+							@click="sortBy(key)"
+							:class="{active: sortKey == key}">
+							{{key | capitalize}}
+							<span class="arrow"
+								:class="sortOrders[key] > 0 ? 'asc' : 'dsc'">
+							</span>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="
+						entry in data
+						| filterBy filterKey
+						| orderBy sortKey sortOrders[sortKey]">
+						<td v-for="key in columns">
+							{{entry[key]}}
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</script>
+
+		<!-- demo root element -->
+		<div id="demo">
+			<form id="search">
+				Search <input name="query" v-model="searchQuery">
+			</form>
+			<demo-grid
+				:data="gridData"
+				:columns="gridColumns"
+				:filter-key="searchQuery">
+			</demo-grid>
+		</div>
+	</div>
+	<script>
+		var count = 1;
+		var user;
+		
+		var config = {
+			apiKey: "AIzaSyCdVwQN5CQD7Zyuxpvr08I6m3lZxtIbUj8",
+			authDomain: "shield-5ec91.firebaseapp.com",
+			databaseURL: "https://shield-5ec91.firebaseio.com",
+			storageBucket: "shield-5ec91.appspot.com",
+		};
+		firebase.initializeApp(config);
+		
+		function login(){
+			var email = $('#email').val()
+			var password = $('#pwd').val()
+			
+			firebase.auth().signInWithEmailAndPassword(email, password).catch(function(error) {
+				var errorCode = error.code;
+				var errorMessage = error.message;	
+				console.log(errorCode, + " " + errorMessage);
+			});
+			user = firebase.auth().currentUser;
+			console.log('Logado');
+		}
+		
+		function signIn(){
+			var email = $('#email').val()
+			var password = $('#pwd').val()
+			
+			firebase.auth().createUserWithEmailAndPassword(email, password).catch(function(error) {
+				var errorCode = error.code;
+				var errorMessage = error.message;
+				console.log(errorCode, + " " + errorMessage);
+			});
+			user = firebase.auth().currentUser;
+			console.log('Cadastrado');
+		}
+		
+		function insertSelector(){
+			console.log(count);
+			var inputDiv = document.createElement('div');
+			var inputLabel = document.createElement('LABEL');
+			var input = document.createElement('Input');
+			inputDiv.className = 'form-group';
+			inputDiv.id = 'form' + count;
+			inputLabel.innerHTML = 'Selector ' + count + ':';
+			input.type ="text";
+			input.className ="form-control";
+			input.id ="pageSel" + count;
+			input.placeholder="Insira o seletor";
+			
+			inputDiv.appendChild(inputLabel);
+			inputDiv.appendChild(input);
+			document.getElementById("InputForm").appendChild(inputDiv);
+			
+			count++;
+		}
+		
+		function submitData(){
+			if(user != null && user){
+				console.log(user);
+				var selectors = [];
+				var pageName;
+				var siteName;
+				var urlPage;
+				
+				for(var count2 = 0; count2 < count; count2++){
+					selectors[count2] = document.getElementById("pageSel" + count2).value;
+					siteName = document.getElementById("name").value;
+					pageName = document.getElementById("pageName").value;
+					urlPage = document.getElementById("pageURL").value;
+				}
+				
+				for(var count2 = 0; count2 < count; count2++){
+					firebase.database().ref('Sites/' + siteName + '/' + pageName + '/selectors/' + count2).set({
+						selector:selectors[count2]
+					});
+					if(count2 > 0){
+						$('#pageSel' + count2).remove();
+						$('#form' + count2).remove();
+					} else {
+						$('#pageSel' + count2).val('');
+					}
+				}
+				
+				firebase.database().ref('Sites/' + siteName + '/' + pageName).update({
+					url:urlPage
+				})
+				
+				$('#name').val('');
+				$('#pageName').val('');
+				$('#pageURL').val('');
+				
+				count = 1;
+			} else {
+				alert("É necessário se logar para finalizar!")
+			}
+		}
+		
+		Vue.component('demo-grid', {
+			template: '#grid-template',
+			props: {
+				data: Array,
+				columns: Array,
+				filterKey: String
+			},
+			data: function () {
+				var sortOrders = {}
+				this.columns.forEach(function (key) {
+				sortOrders[key] = 1
+				})
+				return {
+					sortKey: '',
+					sortOrders: sortOrders
+				}
+			},
+			methods: {
+			sortBy: function (key) {
+				this.sortKey = key
+				this.sortOrders[key] = this.sortOrders[key] * -1
+				}
+			}
+		})
+
+		function update(){
+			ref.orderByKey().on("value", function(snapshot) {
+				snapshot.forEach(function(data) {
+					siteName.push(data.key);
+					data.forEach(function(pages) {
+						urls.push(pages.child('url').val());
+						pages.forEach(function(sel){
+							var subSelectors = [];
+							sel.forEach(function(numbers){
+								subSelectors.push(numbers.child('selector').val());
+							});
+							if(subSelectors[0] != null){
+								selectors.push(subSelectors);
+							}
+						});
+					});
+				});
+				callAccess();
+			});
+		}
+		
+		var demo = new Vue({
+			el: '#demo',
+			data: {
+				searchQuery: '',
+				gridColumns: ['SiteName', 'URL', 'Seletor', 'Status'],
+				gridData: [{
+					SiteName: firebase.database().ref('/Status/').,
+					URL: , Seletor: , Status: Infinity },
+				{ SiteName: 'Chuck Norris', URL: , Seletor: , Status: Infinity },
+				{ SiteName: 'Chuck Norris', URL: , Seletor: , Status: Infinity },
+				{ SiteName: 'Chuck Norris', URL: , Seletor: , Status: Infinity }
+				]
+			}
+		})
+		
+	</script>
+</body>
