@@ -1,0 +1,24 @@
+{
+  "name": "projeto-shield",
+  "version": "1.0.0",
+  "description": "",
+  "main": "WCNightmare.js",
+  "dependencies": {
+    "firebase": "^3.3.0",
+    "nightmare": "^2.6.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bpm1993/Projeto-Shield.git"
+  },
+  "author": "Bruno Munhoz",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bpm1993/Projeto-Shield/issues"
+  },
+  "homepage": "https://github.com/bpm1993/Projeto-Shield#readme"
+}
